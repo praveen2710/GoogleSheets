@@ -23,14 +23,17 @@
 </template>
 
 <script>
-  const {google} = require('googleapis')
+  const shortid = require('shortid')
 
   export default {
     props: ['auth'],
     data () {
       return {
         form: {
-          name: ''
+          name: '',
+          amount: 0,
+          date: null,
+          id: 0
         },
         show: true
       }
@@ -38,7 +41,9 @@
     methods: {
       onSubmit (evt) {
         evt.preventDefault()
-        this.addNewStudent(this.auth, this.form)
+        this.form.id = shortid.generate()
+        this.form.date = new Date()
+        this.$emit('newRow', this.form)
       },
       onReset (evt) {
         evt.preventDefault()
@@ -51,28 +56,6 @@
         this.show = false
         this.$nextTick(() => {
           this.show = true
-        })
-      },
-      /**
-       * Prints the names and majors of students in a sample spreadsheet:
-       * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-       * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
-       */
-      addNewStudent (auth, form) {
-        const sheets = google.sheets({version: 'v4', auth})
-        sheets.spreadsheets.values.append({
-          spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-          range: 'Sheet1!A2:F',
-          valueInputOption: 'RAW',
-          insertDataOption: 'INSERT_ROWS',
-          resource: {
-            values: [
-              [form.name, form.amount]
-            ]
-          },
-          auth: auth
-        }, (err, res) => {
-          if (err) return console.log('The API returned an error: ' + err)
         })
       }
     }

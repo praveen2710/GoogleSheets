@@ -27,8 +27,8 @@
         </div>
       </div>
     </main> -->
-    <form-page v-bind:auth="auth"></form-page>
-    <major-list v-bind:rows="rows"></major-list>
+    <form-page :auth="auth" @newRow='addNewRow'></form-page>
+    <major-list :rows="rows"></major-list>
   </div>
 </template>
 
@@ -39,6 +39,8 @@
 
   const fs = require('fs')
   const {google} = require('googleapis')
+  var mkdirp = require('mkdirp')
+  var getDirName = require('path').dirname
 
   export default {
     name: 'landing-page',
@@ -123,7 +125,50 @@
           range: 'Sheet1!A2:F'
         }, (err, res) => {
           if (err) return console.log('The API returned an error: ' + err)
-          this.rows = res.data.values
+          for (let i in res.data.values) {
+            let rowData = res.data.values[i]
+            this.rows.push({
+              id: rowData[0],
+              company: rowData[1],
+              amount: rowData[2],
+              date: rowData[3]
+            })
+          }
+        })
+      },
+      addNewRow (form) {
+        const auth = this.auth
+        const sheets = google.sheets({version: 'v4', auth})
+        sheets.spreadsheets.values.append({
+          spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+          range: 'Sheet1!A2:F',
+          valueInputOption: 'RAW',
+          insertDataOption: 'INSERT_ROWS',
+          resource: {
+            values: [
+              [form.id, form.name, form.amount, form.date]
+            ]
+          },
+          auth: auth
+        }, (err, res) => {
+          if (err) {
+            this.writeDataToFile(form)
+            return console.log('The API returned an error: ' + err)
+          }
+          this.listMajors(auth)
+        })
+      },
+      writeDataToFile (data) {
+        let fileName = 'data' + new Date()
+
+        const path = 'Pending Upload'
+        mkdirp(getDirName(path), function (err) {
+          if (err) return console.error(err)
+
+          fs.writeFile(fileName, JSON.stringify(data), (err) => {
+            if (err) return console.error(err)
+            console.log('data stored in', fileName)
+          })
         })
       }
     }
