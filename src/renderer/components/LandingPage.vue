@@ -36,6 +36,7 @@
   import SystemInformation from './LandingPage/SystemInformation'
   import FormPage from './FormPage/FormPage'
   import MajorList from './FormPage/MajorList'
+  var moment = require('moment')
 
   const fs = require('fs')
   const {google} = require('googleapis')
@@ -122,16 +123,21 @@
         const sheets = google.sheets({version: 'v4', auth})
         sheets.spreadsheets.values.get({
           spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-          range: 'Sheet1!A2:F'
+          range: 'Sheet1!A2:H'
         }, (err, res) => {
           if (err) return console.log('The API returned an error: ' + err)
+          this.rows = []
           for (let i in res.data.values) {
             let rowData = res.data.values[i]
             this.rows.push({
               id: rowData[0],
-              company: rowData[1],
-              amount: rowData[2],
-              date: rowData[3]
+              entryDate: moment(rowData[1]).format('MMM Do YY'),
+              company: rowData[2],
+              partyNo: rowData[3],
+              pakkaAmt: rowData[4],
+              kachaAmt: rowData[5],
+              boxes: rowData[6],
+              createdDate: moment(rowData[7]).startOf('day').fromNow()
             })
           }
         })
@@ -141,12 +147,12 @@
         const sheets = google.sheets({version: 'v4', auth})
         sheets.spreadsheets.values.append({
           spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-          range: 'Sheet1!A2:F',
+          range: 'Sheet1!A2:H',
           valueInputOption: 'RAW',
           insertDataOption: 'INSERT_ROWS',
           resource: {
             values: [
-              [form.id, form.name, form.amount, form.date]
+              [form.id, form.date, form.name, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
             ]
           },
           auth: auth

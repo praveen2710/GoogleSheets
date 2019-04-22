@@ -1,14 +1,68 @@
 <template>
   <div>
-    <!-- <div v-for="row in rows">
-        <p>{{row[0]}} , Rs {{row[1]}}<b-button @click="editRow(row)">Edit</b-button></p>
-    </div> -->
-    <b-table striped hover 
-    :items="rows" 
-    :fields="fields"
-    :sort-by.sync="sortBy"
-    :sort-desc.sync="sortDesc"></b-table>
-    </div>
+    <el-table
+    stripe
+    border
+    :data="rows.filter(data => !search || data.company.toLowerCase().includes(search.toLowerCase()) || data.partyNo.toLowerCase().includes(search.toLowerCase()))"
+    :default-sort = "{prop: 'entryDate', order: 'descending'}"
+    max-height="500"
+    style="width: 100%">
+      <el-table-column
+        prop="entryDate"
+        sortable
+        fixed
+        label="Date">
+      </el-table-column>
+      <el-table-column
+        prop="company"
+        label="Company"
+        fixed
+        sortable>
+      </el-table-column>
+      <el-table-column
+        prop="partyNo"
+        label="Party No"
+        sortable>
+      </el-table-column>
+      <el-table-column
+        prop="pakkaAmt"
+        label="Pakka"
+        sortable>
+      </el-table-column>
+      <el-table-column
+        prop="kachaAmt"
+        label="Kaccha"
+        sortable>
+      </el-table-column>
+      <el-table-column
+        prop="boxes"
+        label="Boxes"
+        sortable>
+      </el-table-column>
+      <el-table-column
+        prop="createdDate"
+        sortable
+        label="Created">
+      </el-table-column>
+      <el-table-column
+      align="right">
+        <template slot="header" slot-scope="scope">
+          <el-input
+            v-model="search"
+            size="mini"
+            placeholder="Search"/>
+        </template>
+        <template slot-scope="scope">
+          <el-button
+            @click.native.prevent="editRow(scope.$index, rows)"
+            type="text"
+            size="small">
+            Edit
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </div>
 </template>
 <script>
 export default {
@@ -16,18 +70,12 @@ export default {
   props: ['rows'],
   data () {
     return {
-      sortBy: 'date',
-      sortDesc: true,
-      fields: [
-        {key: 'company', sortable: true},
-        {key: 'amount', sortable: true},
-        {key: 'date', sortable: true}
-      ]
+      search: ''
     }
   },
   methods: {
-    editRow (row) {
-      console.log(row)
+    editRow (index, rows) {
+      console.log(rows.splice(index, 1))
     }
   }
 }
