@@ -3,14 +3,14 @@
     <el-form  :label-position="labelPosition" :inline="true" :model="form" ref="form" class="demo-form-inline" size="mini">
       <el-form-item label="Date">
         <el-date-picker
-          v-model="form.date"
+          v-model="form.entryDate"
           type="date"
           placeholder="Pick a day"
           :picker-options="pickerOptions">
         </el-date-picker>
       </el-form-item>
       <el-form-item label="Company">
-        <el-input v-model="form.name" placeholder="Company Name"></el-input>
+        <el-input v-model="form.company" placeholder="Company Name"></el-input>
       </el-form-item>
       <el-form-item label="Party No">
         <el-input v-model="form.partyNo" placeholder="Party No"></el-input>
@@ -36,19 +36,9 @@
   const shortid = require('shortid')
 
   export default {
-    props: ['auth'],
+    props: ['form'],
     data () {
       return {
-        form: {
-          id: 0,
-          date: null,
-          partyNo: '',
-          name: '',
-          pakkaAmt: 0,
-          kachaAmt: 0,
-          boxes: 0,
-          createdDate: null
-        },
         show: true,
         pickerOptions: {
           disabledDate (time) {
@@ -82,20 +72,16 @@
     methods: {
       onSubmit (evt) {
         evt.preventDefault()
-        this.form.id = shortid.generate()
-        this.form.createdDate = new Date()
-        this.$emit('newRow', this.form)
-        this.resetForm()
+        debugger
+        if (this.form.id === undefined) {
+          this.form.id = shortid.generate()
+          this.form.createdDate = new Date()
+          this.$emit('newRow', this.form)
+        }
+        this.$emit('updateRow', this.form)
       },
       resetForm () {
-        this.form.id = 0
-        this.form.date = null
-        this.form.partyNo = ''
-        this.form.name = ''
-        this.form.pakkaAmt = 0
-        this.form.kachaAmt = 0
-        this.form.boxes = 0
-        this.form.createdDate = null
+        this.$emit('reset')
       }
     }
   }

@@ -54,7 +54,7 @@
         </template>
         <template slot-scope="scope">
           <el-button
-            @click.native.prevent="editRow(scope.$index, rows)"
+            @click.native.prevent="editRow(scope.row)"
             type="text"
             size="small">
             Edit
@@ -74,8 +74,9 @@ export default {
     }
   },
   methods: {
-    editRow (index, rows) {
-      console.log(rows.splice(index, 1))
+    editRow (row) {
+      console.log(row)
+      this.$emit('updateRow', row)
     }
   }
 }

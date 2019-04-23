@@ -27,8 +27,8 @@
         </div>
       </div>
     </main> -->
-    <form-page :auth="auth" @newRow='addNewRow'></form-page>
-    <major-list :rows="rows"></major-list>
+    <form-page :form="form" @newRow='addNewRow' @updateRow='findRowPosition' @reset="resetForm"></form-page>
+    <major-list :rows="rows" @updateRow='loadRowToUpdate'></major-list>
   </div>
 </template>
 
@@ -36,7 +36,7 @@
   import SystemInformation from './LandingPage/SystemInformation'
   import FormPage from './FormPage/FormPage'
   import MajorList from './FormPage/MajorList'
-  var moment = require('moment')
+  // var moment = require('moment')
 
   const fs = require('fs')
   const {google} = require('googleapis')
@@ -48,9 +48,7 @@
     components: {SystemInformation, FormPage, MajorList},
     data () {
       return {
-        form: {
-          name: ''
-        },
+        form: {},
         show: true,
         // If modifying these scopes, delete token.json.
         SCOPES: ['https://www.googleapis.com/auth/spreadsheets'],
@@ -131,13 +129,13 @@
             let rowData = res.data.values[i]
             this.rows.push({
               id: rowData[0],
-              entryDate: moment(rowData[1]).format('MMM Do YY'),
+              entryDate: rowData[1], // moment(rowData[1]).format('MMM Do YY'),
               company: rowData[2],
               partyNo: rowData[3],
               pakkaAmt: rowData[4],
               kachaAmt: rowData[5],
               boxes: rowData[6],
-              createdDate: moment(rowData[7]).startOf('day').fromNow()
+              createdDate: rowData[7] // moment(rowData[7]).startOf('day').fromNow()
             })
           }
         })
@@ -152,13 +150,14 @@
           insertDataOption: 'INSERT_ROWS',
           resource: {
             values: [
-              [form.id, form.date, form.name, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
+              [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
             ]
           },
           auth: auth
         }, (err, res) => {
           if (err) {
             this.writeDataToFile(form)
+            this.resetForm()
             return console.log('The API returned an error: ' + err)
           }
           this.listMajors(auth)
@@ -175,6 +174,50 @@
             if (err) return console.error(err)
             console.log('data stored in', fileName)
           })
+        })
+      },
+      loadRowToUpdate (editRow) {
+        this.form = editRow
+      },
+      findRowPosition (updatedRow) {
+        console.log(updatedRow)
+        let i = 0
+        debugger
+        if (this.rows != null) {
+          for (let index in this.rows) {
+            i += 1
+            if (this.rows[index].id === updatedRow.id) {
+              console.log("IT'S A MATCH! i= " + i)
+              let rangeToUpdate = 'A' + (i + 1) + ':H' + (i + 1) // row to be updated
+              this.updateExistingRow(updatedRow, rangeToUpdate)
+            }
+          }
+        }
+        this.resetForm()
+      },
+      resetForm () {
+        this.form = {}
+      },
+      updateExistingRow (form, range) {
+        const auth = this.auth
+        const sheets = google.sheets({version: 'v4', auth})
+        sheets.spreadsheets.values.update({
+          spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+          range: 'Sheet1!' + range,
+          valueInputOption: 'RAW',
+          resource: {
+            values: [
+              [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
+            ]
+          },
+          auth: auth
+        }, (err, res) => {
+          if (err) {
+            this.writeDataToFile(form)
+            this.resetForm()
+            return console.log('The API returned an error: ' + err)
+          }
+          this.listMajors(auth)
         })
       }
     }
