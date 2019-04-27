@@ -6,9 +6,8 @@
 </template>
 
 <script>
-  import SystemInformation from './LandingPage/SystemInformation'
-  import FormPage from './FormPage/FormPage'
-  import MajorList from './FormPage/MajorList'
+  import FormPage from '../FormPage/FormPage'
+  import MajorList from '../FormPage/MajorList'
   // var moment = require('moment')
   const remote = require('electron').remote
   const app = remote.app
@@ -21,7 +20,7 @@
 
   export default {
     name: 'landing-page',
-    components: {SystemInformation, FormPage, MajorList},
+    components: {FormPage, MajorList},
     data () {
       return {
         form: {},
