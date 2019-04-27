@@ -72,13 +72,13 @@
     methods: {
       onSubmit (evt) {
         evt.preventDefault()
-        debugger
         if (this.form.id === undefined) {
           this.form.id = shortid.generate()
           this.form.createdDate = new Date()
           this.$emit('newRow', this.form)
+        } else {
+          this.$emit('updatedRow', this.form)
         }
-        this.$emit('updateRow', this.form)
       },
       resetForm () {
         this.$emit('reset')

@@ -1,34 +1,7 @@
 <template>
   <div id="wrapper">
-    <!-- <img id="logo" src="~@/assets/logo.png" alt="electron-vue"> -->
-    <!-- <main>
-      <div class="left-side">
-        <span class="title">
-          Welcome to your new project!
-        </span>
-        <system-information></system-information>
-      </div>
-
-      <div class="right-side">
-        <div class="doc">
-          <div class="title">Getting Started</div>
-          <p>
-            electron-vue comes packed with detailed documentation that covers everything from
-            internal configurations, using the project structure, building your application,
-            and so much more.
-          </p>
-          <button @click="open('https://simulatedgreg.gitbooks.io/electron-vue/content/')">Read the Docs</button><br><br>
-        </div>
-        <div class="doc">
-          <div class="title alt">Other Documentation</div>
-          <button class="alt" @click="open('https://electron.atom.io/docs/')">Electron</button>
-          <button class="alt" @click="open('https://vuejs.org/v2/guide/')">Vue.js</button>
-          <router-link to="/inputform">Navigate to form</router-link>
-        </div>
-      </div>
-    </main> -->
-    <form-page :form="form" @newRow='addNewRow' @updateRow='findRowPosition' @reset="resetForm"></form-page>
-    <major-list :rows="rows" @updateRow='loadRowToUpdate'></major-list>
+    <form-page :form="form" @newRow='addNewRow' @updatedRow='findRowPosition' @reset="resetForm"></form-page>
+    <major-list :rows="rows" @editRow='loadRowToEdit'></major-list>
   </div>
 </template>
 
@@ -37,11 +10,14 @@
   import FormPage from './FormPage/FormPage'
   import MajorList from './FormPage/MajorList'
   // var moment = require('moment')
+  const remote = require('electron').remote
+  const app = remote.app
 
   const fs = require('fs')
   const {google} = require('googleapis')
   var mkdirp = require('mkdirp')
-  var getDirName = require('path').dirname
+  const path = require('path')
+  const fileLoc = path.join(app.getPath('home'), 'offlineData')
 
   export default {
     name: 'landing-page',
@@ -57,6 +33,8 @@
         // time.
         TOKEN_PATH: 'token.json',
         rows: [],
+        offLineRowIds: [],
+        cachedOnLineRows: [],
         auth: {}
       }
     },
@@ -64,7 +42,7 @@
       fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err)
         // Authorize a client with credentials, then call the Google Sheets API.
-        this.authorize(JSON.parse(content), this.listMajors)
+        this.authorize(JSON.parse(content), this.loadFormData)
       })
     },
     methods: {
@@ -116,28 +94,42 @@
        * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
        * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
        */
-      listMajors (auth) {
+      loadFormData (auth) {
+        this.rows = []
         this.auth = auth
         const sheets = google.sheets({version: 'v4', auth})
-        sheets.spreadsheets.values.get({
-          spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-          range: 'Sheet1!A2:H'
-        }, (err, res) => {
-          if (err) return console.log('The API returned an error: ' + err)
-          this.rows = []
-          for (let i in res.data.values) {
-            let rowData = res.data.values[i]
-            this.rows.push({
-              id: rowData[0],
-              entryDate: rowData[1], // moment(rowData[1]).format('MMM Do YY'),
-              company: rowData[2],
-              partyNo: rowData[3],
-              pakkaAmt: rowData[4],
-              kachaAmt: rowData[5],
-              boxes: rowData[6],
-              createdDate: rowData[7] // moment(rowData[7]).startOf('day').fromNow()
-            })
-          }
+        this.readOnlineRows(sheets).then((retrievedRows) => {
+          this.cachedOnLineRows = retrievedRows
+          this.rows.push(...retrievedRows)
+        }).catch((err) => {
+          console.log('failed to retrieve online data currently', err)
+          this.rows.push(...this.cachedOnLineRows)
+        })
+        this.readOfflineRows()
+      },
+      readOnlineRows (sheets) {
+        return new Promise((resolve, reject) => {
+          sheets.spreadsheets.values.get({
+            spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+            range: 'Sheet1!A2:H'
+          }, (err, res) => {
+            if (err) return reject(err)
+            let retrievedRows = []
+            for (let i in res.data.values) {
+              let rowData = res.data.values[i]
+              retrievedRows.push({
+                id: rowData[0],
+                entryDate: rowData[1], // moment(rowData[1]).format('MMM Do YY'),
+                company: rowData[2],
+                partyNo: rowData[3],
+                pakkaAmt: rowData[4],
+                kachaAmt: rowData[5],
+                boxes: rowData[6],
+                createdDate: rowData[7] // moment(rowData[7]).startOf('day').fromNow()
+              })
+            }
+            resolve(retrievedRows)
+          })
         })
       },
       addNewRow (form) {
@@ -157,67 +149,136 @@
         }, (err, res) => {
           if (err) {
             this.writeDataToFile(form)
-            this.resetForm()
             return console.log('The API returned an error: ' + err)
           }
-          this.listMajors(auth)
+          this.loadFormData(auth)
+          this.resetForm()
+          this.uploadOfflineRows()
         })
       },
-      writeDataToFile (data) {
-        let fileName = 'data' + new Date()
-
-        const path = 'Pending Upload'
-        mkdirp(getDirName(path), function (err) {
-          if (err) return console.error(err)
-
-          fs.writeFile(fileName, JSON.stringify(data), (err) => {
-            if (err) return console.error(err)
-            console.log('data stored in', fileName)
+      writeDataOnline (formData) {
+        return new Promise((resolve, reject) => {
+          const auth = this.auth
+          const sheets = google.sheets({version: 'v4', auth})
+          sheets.spreadsheets.values.append({
+            spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+            range: 'Sheet1!A2:H',
+            valueInputOption: 'RAW',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+              values: [
+                [formData.id, formData.entryDate, formData.company, formData.partyNo, formData.pakkaAmt, formData.kachaAmt, formData.boxes, formData.createdDate]
+              ]
+            },
+            auth: auth
+          }, (err, res) => {
+            if (err) reject(err)
+            resolve('Sucess')
           })
         })
       },
-      loadRowToUpdate (editRow) {
-        this.form = editRow
+      writeDataToFile (data) {
+        let fileName = data.id
+        mkdirp(fileLoc, function (err) {
+          // path exists unless there was an error
+          fs.writeFile(path.join(fileLoc, fileName), JSON.stringify(data), (err) => {
+            if (err) return console.error(err)
+            this.loadFormData(this.auth)
+          })
+          if (err) return console.error(err)
+        })
+      },
+      readOfflineRows () {
+        const component = this
+        fs.readdir(fileLoc, (err, files) => {
+          if (err) return console.error(err)
+          files.forEach(file => {
+            component.offLineRowIds.push(file)
+            fs.readFile(path.join(fileLoc, file), (err, content) => {
+              if (err) return console.log('Error loading data file:', err)
+              // Authorize a client with credentials, then call the Google Sheets API.
+              component.rows.push(JSON.parse(content))
+            })
+          })
+        })
+      },
+      uploadOfflineRows () {
+        const component = this
+        fs.readdir(fileLoc, (err, files) => {
+          if (err) return console.error(err)
+          files.forEach(file => {
+            fs.readFile(path.join(fileLoc, file), (err, content) => {
+              if (err) return console.log('Error loading data file:', err)
+              // Authorize a client with credentials, then call the Google Sheets API.
+              const rowData = JSON.parse(content)
+              component.writeDataOnline(rowData).then(() => {
+                fs.unlinkSync(path.join(fileLoc, file))
+              }).catch(() => {
+                console.log('upload failed will retry again later')
+              })
+              // if (component.findRowOnline(rowData) === undefined) {
+              //   console.log('row never uploaded creating new entry')
+              //   component.addNewRow(rowData)
+              // } else {
+              //   console.log('row exists already updating it')
+              //   component.updateOnlineRow(rowData, this.findRowOnline(rowData))
+              // }
+            })
+          })
+        })
+      },
+      loadRowToEdit (editRow) {
+        this.form = {...editRow}
       },
       findRowPosition (updatedRow) {
-        console.log(updatedRow)
+        if (this.offLineRowIds.includes(updatedRow.id)) {
+          console.log('file saved offline overwrite it')
+          this.writeDataToFile(updatedRow)
+        } else {
+          this.updateOnlineRow(updatedRow, this.findRowOnline(updatedRow)).then(() => {
+            this.loadFormData(this.auth)
+          }).catch(() => {
+            this.writeDataToFile(updatedRow)
+          })
+        }
+        this.resetForm()
+      },
+      findRowOnline (rowData) {
         let i = 0
-        debugger
         if (this.rows != null) {
-          for (let index in this.rows) {
+          for (let index in this.cachedOnLineRows) {
             i += 1
-            if (this.rows[index].id === updatedRow.id) {
+            if (this.rows[index].id === rowData.id) {
               console.log("IT'S A MATCH! i= " + i)
               let rangeToUpdate = 'A' + (i + 1) + ':H' + (i + 1) // row to be updated
-              this.updateExistingRow(updatedRow, rangeToUpdate)
+              return rangeToUpdate
             }
           }
         }
-        this.resetForm()
       },
       resetForm () {
         this.form = {}
       },
-      updateExistingRow (form, range) {
-        const auth = this.auth
-        const sheets = google.sheets({version: 'v4', auth})
-        sheets.spreadsheets.values.update({
-          spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-          range: 'Sheet1!' + range,
-          valueInputOption: 'RAW',
-          resource: {
-            values: [
-              [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
-            ]
-          },
-          auth: auth
-        }, (err, res) => {
-          if (err) {
-            this.writeDataToFile(form)
-            this.resetForm()
-            return console.log('The API returned an error: ' + err)
-          }
-          this.listMajors(auth)
+      updateOnlineRow (form, range) {
+        return new Promise((resolve, reject) => {
+          const auth = this.auth
+          const sheets = google.sheets({version: 'v4', auth})
+          sheets.spreadsheets.values.update({
+            spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+            range: 'Sheet1!' + range,
+            valueInputOption: 'RAW',
+            resource: {
+              values: [
+                [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
+              ]
+            },
+            auth: auth
+          }, (err, res) => {
+            if (err) {
+              reject(err)
+            }
+            resolve('Success')
+          })
         })
       }
     }
