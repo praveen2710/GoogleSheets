@@ -178,14 +178,16 @@
         })
       },
       writeDataToFile (data) {
+        const component = this
         let fileName = data.id
         mkdirp(fileLoc, function (err) {
+          if (err) alert('Data was not saved please write it somewhere', err)
           // path exists unless there was an error
           fs.writeFile(path.join(fileLoc, fileName), JSON.stringify(data), (err) => {
-            if (err) return console.error(err)
-            this.loadFormData(this.auth)
+            if (err) alert('Data was not saved please write it somewhere', err)
+            component.resetForm()
+            component.loadFormData(component.auth)
           })
-          if (err) return console.error(err)
         })
       },
       readOfflineRows () {
@@ -211,18 +213,22 @@
               if (err) return console.log('Error loading data file:', err)
               // Authorize a client with credentials, then call the Google Sheets API.
               const rowData = JSON.parse(content)
-              component.writeDataOnline(rowData).then(() => {
-                fs.unlinkSync(path.join(fileLoc, file))
-              }).catch(() => {
-                console.log('upload failed will retry again later')
-              })
-              // if (component.findRowOnline(rowData) === undefined) {
-              //   console.log('row never uploaded creating new entry')
-              //   component.addNewRow(rowData)
-              // } else {
-              //   console.log('row exists already updating it')
-              //   component.updateOnlineRow(rowData, this.findRowOnline(rowData))
-              // }
+
+              if (component.findRowOnline(rowData) === undefined) {
+                console.log('row never uploaded creating new entry')
+                component.writeDataOnline(rowData).then(() => {
+                  fs.unlinkSync(path.join(fileLoc, file))
+                }).catch(() => {
+                  console.log('upload failed will retry again later')
+                })
+              } else {
+                console.log('row exists already updating it')
+                component.updateOnlineRow(rowData, this.findRowOnline(rowData)).then(() => {
+                  fs.unlinkSync(path.join(fileLoc, file))
+                }).catch(() => {
+                  console.log('upload failed will retry again later')
+                })
+              }
             })
           })
         })
@@ -241,14 +247,13 @@
             this.writeDataToFile(updatedRow)
           })
         }
-        this.resetForm()
       },
       findRowOnline (rowData) {
         let i = 0
         if (this.rows != null) {
           for (let index in this.cachedOnLineRows) {
             i += 1
-            if (this.rows[index].id === rowData.id) {
+            if (this.cachedOnLineRows[index].id === rowData.id) {
               console.log("IT'S A MATCH! i= " + i)
               let rangeToUpdate = 'A' + (i + 1) + ':H' + (i + 1) // row to be updated
               return rangeToUpdate

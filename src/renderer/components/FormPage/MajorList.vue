@@ -75,7 +75,6 @@ export default {
   },
   methods: {
     editRow (row) {
-      console.log(row)
       this.$emit('editRow', row)
     }
   }
