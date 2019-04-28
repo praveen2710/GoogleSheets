@@ -11,6 +11,8 @@
   // var moment = require('moment')
   const remote = require('electron').remote
   const app = remote.app
+  // const Menu =  require('electron').Menu
+  // const ipcRenderer = require('electron')
 
   const fs = require('fs')
   const {google} = require('googleapis')
@@ -38,6 +40,7 @@
       }
     },
     created () {
+      // this.initMenu()
       fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err)
         // Authorize a client with credentials, then call the Google Sheets API.
@@ -45,6 +48,26 @@
       })
     },
     methods: {
+      // initMenu () {
+      //   const menu = Menu.buildFromTemplate([{
+      //     label: 'File',
+      //     subMenu: [
+      //       {
+      //         label: 'Settings',
+      //         accelerator: 'CmdOrCtrl+,',
+      //         click: () => {
+      //           ipcRenderer.send('toggle-settings')
+      //         }
+      //       },
+      //       { type: 'separator' },
+      //       {
+      //         label: 'Quit',
+      //         accelerator: 'CmdOrCtrl+Q'
+      //       }
+      //     ]
+      //   }])
+      //   Menu.setApplicationMenu(menu)
+      // },
       open (link) {
         this.$electron.shell.openExternal(link)
       },
