@@ -1,8 +1,66 @@
 <template>
-  <p>Settings Go here</p>
+  <div>
+    <el-form inline ref="credentials" :model="creds" label-width="120px">
+      <el-form-item label="Credentials">
+        <el-input v-model="creds.cred"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="onClick">Submit</el-button>
+      </el-form-item>
+    </el-form>
+
+    <el-form ref="form" :model="form" label-width="120px">
+      <el-form-item label="Doc Id">
+        <el-input v-model="form.docId"></el-input>
+      </el-form-item>
+      <el-form-item label="Secret Code">
+        <el-input v-model="form.code"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="primary" @click="onSubmit">Submit</el-button>
+      </el-form-item>
+    </el-form>
+    <p>{{authUrl}}</p>
+  </div>
 </template>
 <script>
+const Store = require('electron-store')
+const store = new Store()
+const {google} = require('googleapis')
+
 export default {
+  name: 'settings-page',
+  data () {
+    return {
+      SCOPES: ['https://www.googleapis.com/auth/spreadsheets'],
+      authUrl: '',
+      form: {
+        docId: '',
+        code: ''
+      },
+      creds: {
+        cred: ''
+      }
+    }
+  },
+  methods: {
+    onSubmit () {
+      console.log('submit!')
+      let credentials = JSON.parse(store.get('credentials.json'))
+      console.log(credentials)
+      const oAuth2Client = new google.auth.OAuth2(credentials.installed.client_id, credentials.installed.client_secret, credentials.installed.redirect_uris[0])
+      this.authUrl = oAuth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: this.SCOPES
+      })
+      store.set('code', this.form.code)
+      store.set('docId', this.form.docId)
+    },
+    onClick () {
+      console.log('save ceredentials')
+      store.set('credentials.json', this.creds.cred)
+    }
+  }
 
 }
 </script>

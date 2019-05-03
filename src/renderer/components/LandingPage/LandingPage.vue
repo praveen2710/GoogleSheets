@@ -1,5 +1,6 @@
 <template>
   <div id="wrapper">
+    <p>{{connectionError}}</p>
     <form-page :form="form" @newRow='addNewRow' @updatedRow='findRowPosition' @reset="resetForm"></form-page>
     <major-list :rows="rows" @editRow='loadRowToEdit'></major-list>
   </div>
@@ -19,6 +20,8 @@
   var mkdirp = require('mkdirp')
   const path = require('path')
   const fileLoc = path.join(app.getPath('home'), 'offlineData')
+  const Store = require('electron-store')
+  const store = new Store()
 
   export default {
     name: 'landing-page',
@@ -36,38 +39,32 @@
         rows: [],
         offLineRowIds: [],
         cachedOnLineRows: [],
-        auth: {}
+        auth: {},
+        connectionError: '',
+        spreadsheetId: ''
       }
     },
     created () {
       // this.initMenu()
-      fs.readFile('credentials.json', (err, content) => {
-        if (err) return console.log('Error loading client secret file:', err)
-        // Authorize a client with credentials, then call the Google Sheets API.
-        this.authorize(JSON.parse(content), this.loadFormData)
-      })
+      if (store.has('docId')) {
+        this.spreadsheetId = store.get('docId')
+        if (store.has('credentials.json')) {
+          this.authorize(JSON.parse(store.get('credentials.json')), this.loadFormData)
+        } else {
+          this.connectionError = 'credentials not found'
+        }
+      } else {
+        this.connectionError = 'docId not set'
+      }
+      // console.log('test')
+      // console.log(store.get('credentials.json'))
+      // fs.readFile('credentials.json', (err, content) => {
+      //   if (err) return console.log('Error loading client secret file:', err)
+      //   // Authorize a client with credentials, then call the Google Sheets API.
+      //   this.authorize(JSON.parse(content), this.loadFormData)
+      // })
     },
     methods: {
-      // initMenu () {
-      //   const menu = Menu.buildFromTemplate([{
-      //     label: 'File',
-      //     subMenu: [
-      //       {
-      //         label: 'Settings',
-      //         accelerator: 'CmdOrCtrl+,',
-      //         click: () => {
-      //           ipcRenderer.send('toggle-settings')
-      //         }
-      //       },
-      //       { type: 'separator' },
-      //       {
-      //         label: 'Quit',
-      //         accelerator: 'CmdOrCtrl+Q'
-      //       }
-      //     ]
-      //   }])
-      //   Menu.setApplicationMenu(menu)
-      // },
       open (link) {
         this.$electron.shell.openExternal(link)
       },
@@ -81,11 +78,17 @@
         const oAuth2Client = new google.auth.OAuth2(
           credentials.installed.client_id, credentials.installed.client_secret, credentials.installed.redirect_uris[0])
         // Check if we have previously stored a token.
-        fs.readFile(this.TOKEN_PATH, (err, token) => {
-          if (err) return this.getNewToken(oAuth2Client, callback)
-          oAuth2Client.setCredentials(JSON.parse(token))
+        if (store.has('token.json')) {
+          oAuth2Client.setCredentials(store.get('token.json'))
           callback(oAuth2Client)
-        })
+        } else {
+          this.getNewToken(oAuth2Client, callback)
+        }
+        // fs.readFile(this.TOKEN_PATH, (err, token) => {
+        //   if (err) return this.getNewToken(oAuth2Client, callback)
+        //   oAuth2Client.setCredentials(JSON.parse(token))
+        //   callback(oAuth2Client)
+        // })
       },
       /**
        * Get and store new token after prompting for user authorization, and then
@@ -94,22 +97,26 @@
        * @param {getEventsCallback} callback The callback for the authorized client.
        */
       getNewToken (oAuth2Client, callback) {
-        const authUrl = oAuth2Client.generateAuthUrl({
-          access_type: 'offline',
-          scope: this.SCOPES
-        })
-        console.log('Authorize this app by visiting this url:', authUrl)
-        let code = '4/EAEgmB5weTkJBHU31av4ahMkFc4ktzW4u2UuuqaDnDNmFg5c9jEBoac'
-        oAuth2Client.getToken(code, (err, token) => {
-          if (err) return console.error('Error while trying to retrieve access token', err)
-          oAuth2Client.setCredentials(token)
-          // Store the token to disk for later program executions
-          fs.writeFile(this.TOKEN_PATH, JSON.stringify(token), (err) => {
-            if (err) return console.error(err)
-            console.log('Token stored to', this.TOKEN_PATH)
+        if (store.has('code')) {
+          // const authUrl = oAuth2Client.generateAuthUrl({
+          //   access_type: 'offline',
+          //   scope: this.SCOPES
+          // })
+          let code = store.get('code')
+          oAuth2Client.getToken(code, (err, token) => {
+            if (err) return console.error('Error while trying to retrieve access token', err)
+            store.set('token.json', token)
+            oAuth2Client.setCredentials(token)
+            // Store the token to disk for later program executions
+            // fs.writeFile(this.TOKEN_PATH, JSON.stringify(token), (err) => {
+            //   if (err) return console.error(err)
+            //   console.log('Token stored to', this.TOKEN_PATH)
+            // })
+            callback(oAuth2Client)
           })
-          callback(oAuth2Client)
-        })
+        } else {
+          this.connectionError = 'secret code not set'
+        }
       },
       /**
        * Prints the names and majors of students in a sample spreadsheet:
@@ -120,7 +127,7 @@
         this.rows = []
         this.auth = auth
         const sheets = google.sheets({version: 'v4', auth})
-        this.readOnlineRows(sheets).then((retrievedRows) => {
+        this.readOnlineRows(sheets, this.spreadSheetId).then((retrievedRows) => {
           this.cachedOnLineRows = retrievedRows
           this.rows.push(...retrievedRows)
         }).catch((err) => {
@@ -130,9 +137,11 @@
         this.readOfflineRows()
       },
       readOnlineRows (sheets) {
+        const sheetId = this.spreadsheetId
         return new Promise((resolve, reject) => {
           sheets.spreadsheets.values.get({
-            spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+            spreadsheetId: sheetId,
+            // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!A2:H'
           }, (err, res) => {
             if (err) return reject(err)
@@ -157,8 +166,10 @@
       addNewRow (form) {
         const auth = this.auth
         const sheets = google.sheets({version: 'v4', auth})
+        const sheetId = this.spreadsheetId
         sheets.spreadsheets.values.append({
-          spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+          spreadsheetId: sheetId,
+          // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
           range: 'Sheet1!A2:H',
           valueInputOption: 'RAW',
           insertDataOption: 'INSERT_ROWS',
@@ -182,8 +193,10 @@
         return new Promise((resolve, reject) => {
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
+          const sheetId = this.spreadSheetId
           sheets.spreadsheets.values.append({
-            spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+            spreadsheetId: sheetId,
+            // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!A2:H',
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
@@ -290,8 +303,10 @@
         return new Promise((resolve, reject) => {
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
+          const sheetId = this.spreadsheetId
           sheets.spreadsheets.values.update({
-            spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+            spreadSheetId: sheetId,
+            // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!' + range,
             valueInputOption: 'RAW',
             resource: {
