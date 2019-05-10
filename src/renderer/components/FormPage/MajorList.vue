@@ -11,7 +11,8 @@
         prop="entryDate"
         sortable
         fixed
-        label="Date">
+        label="Date"
+        :formatter="entryDateFormatting">
       </el-table-column>
       <el-table-column
         prop="company"
@@ -36,13 +37,13 @@
       </el-table-column>
       <el-table-column
         prop="boxes"
-        label="Boxes"
-        sortable>
+        label="Boxes">
       </el-table-column>
       <el-table-column
         prop="createdDate"
         sortable
-        label="Created">
+        label="Created"
+        :formatter="noOfDaysFormatting">
       </el-table-column>
       <el-table-column
       align="right">
@@ -53,7 +54,7 @@
             placeholder="Search"/>
         </template>
         <template slot-scope="scope">
-          <el-button
+          <el-button :disabled="disableEdit(scope.row.createdDate)"
             @click.native.prevent="editRow(scope.row)"
             type="text"
             size="small">
@@ -65,6 +66,9 @@
   </div>
 </template>
 <script>
+
+var moment = require('moment')
+
 export default {
   name: 'major-list',
   props: ['rows'],
@@ -73,9 +77,32 @@ export default {
       search: ''
     }
   },
+  computed: {
+
+  },
   methods: {
     editRow (row) {
+      debugger
       this.$emit('editRow', row)
+    },
+    disableEdit (creationDate) {
+      var ONE_DAY = 1000 * 60 * 60 * 24
+      var diff = new Date() - new Date(creationDate)
+      return (diff / ONE_DAY) > 7
+    },
+    entryDateFormatting (row, column) {
+      var date = row[column.property]
+      if (date === undefined) {
+        return 'Error'
+      }
+      return moment(date).format('MMM Do YY')
+    },
+    noOfDaysFormatting (row, column) {
+      var date = row[column.property]
+      if (date === undefined) {
+        return 'Error'
+      }
+      return moment(date).startOf('minute').fromNow()
     }
   }
 }
