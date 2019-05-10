@@ -1,5 +1,6 @@
 <template>
   <div>
+    <h2>Add/Edit Entry</h2>
     <el-form  :label-position="labelPosition" :inline="true" :rules="rules" :model="form" ref="form" class="demo-form-inline" size="mini">
       <el-form-item label="Date" prop="entryDate">
         <el-date-picker
@@ -99,14 +100,15 @@
     },
     methods: {
       onSubmit (formName) {
-        // evt.preventDefault()
         this.$refs[formName].validate((valid) => {
           if (valid) {
             if (this.form.id === undefined) {
               this.form.id = shortid.generate()
               this.form.createdDate = new Date()
+              this.form.updateDate = new Date()
               this.$emit('newRow', this.form)
             } else {
+              this.form.updateDate = new Date()
               this.$emit('updatedRow', this.form)
             }
             this.$refs[formName].resetFields()

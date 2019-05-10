@@ -1,10 +1,11 @@
 <template>
   <div>
+    <h2>Entries List</h2>
     <el-table
     stripe
     border
     :data="rows.filter(data => !search || data.company.toLowerCase().includes(search.toLowerCase()) || data.partyNo.toLowerCase().includes(search.toLowerCase()))"
-    :default-sort = "{prop: 'entryDate', order: 'descending'}"
+    :default-sort = "{prop: 'updateDate', order: 'descending'}"
     max-height="500"
     style="width: 100%">
       <el-table-column
@@ -40,9 +41,9 @@
         label="Boxes">
       </el-table-column>
       <el-table-column
-        prop="createdDate"
+        prop="updateDate"
         sortable
-        label="Created"
+        label="Last Updated"
         :formatter="noOfDaysFormatting">
       </el-table-column>
       <el-table-column
@@ -82,7 +83,6 @@ export default {
   },
   methods: {
     editRow (row) {
-      debugger
       this.$emit('editRow', row)
     },
     disableEdit (creationDate) {

@@ -9,12 +9,8 @@
 <script>
   import FormPage from '../FormPage/FormPage'
   import MajorList from '../FormPage/MajorList'
-  // var moment = require('moment')
   const remote = require('electron').remote
   const app = remote.app
-  // const Menu =  require('electron').Menu
-  // const ipcRenderer = require('electron')
-
   const fs = require('fs')
   const {google} = require('googleapis')
   var mkdirp = require('mkdirp')
@@ -48,7 +44,6 @@
       }
     },
     created () {
-      // this.initMenu()
       if (store.has('docId')) {
         this.spreadsheetId = store.get('docId')
         if (store.has('credentials.json')) {
@@ -59,13 +54,6 @@
       } else {
         this.connectionError = 'docId not set'
       }
-      // console.log('test')
-      // console.log(store.get('credentials.json'))
-      // fs.readFile('credentials.json', (err, content) => {
-      //   if (err) return console.log('Error loading client secret file:', err)
-      //   // Authorize a client with credentials, then call the Google Sheets API.
-      //   this.authorize(JSON.parse(content), this.loadFormData)
-      // })
     },
     methods: {
       open (link) {
@@ -87,11 +75,6 @@
         } else {
           this.getNewToken(oAuth2Client, callback)
         }
-        // fs.readFile(this.TOKEN_PATH, (err, token) => {
-        //   if (err) return this.getNewToken(oAuth2Client, callback)
-        //   oAuth2Client.setCredentials(JSON.parse(token))
-        //   callback(oAuth2Client)
-        // })
       },
       /**
        * Get and store new token after prompting for user authorization, and then
@@ -101,20 +84,11 @@
        */
       getNewToken (oAuth2Client, callback) {
         if (store.has('code')) {
-          // const authUrl = oAuth2Client.generateAuthUrl({
-          //   access_type: 'offline',
-          //   scope: this.SCOPES
-          // })
           let code = store.get('code')
           oAuth2Client.getToken(code, (err, token) => {
             if (err) return console.error('Error while trying to retrieve access token', err)
             store.set('token.json', token)
             oAuth2Client.setCredentials(token)
-            // Store the token to disk for later program executions
-            // fs.writeFile(this.TOKEN_PATH, JSON.stringify(token), (err) => {
-            //   if (err) return console.error(err)
-            //   console.log('Token stored to', this.TOKEN_PATH)
-            // })
             callback(oAuth2Client)
           })
         } else {
@@ -145,7 +119,7 @@
           sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-            range: 'Sheet1!A2:H'
+            range: 'Sheet1!A2:I'
           }, (err, res) => {
             if (err) return reject(err)
             let retrievedRows = []
@@ -159,7 +133,8 @@
                 pakkaAmt: Number(rowData[4]),
                 kachaAmt: Number(rowData[5]),
                 boxes: rowData[6],
-                createdDate: new Date(rowData[7])
+                createdDate: new Date(rowData[7]),
+                updateDate: new Date(rowData[8])
               })
             }
             resolve(retrievedRows)
@@ -173,12 +148,12 @@
         sheets.spreadsheets.values.append({
           spreadsheetId: sheetId,
           // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-          range: 'Sheet1!A2:H',
+          range: 'Sheet1!A2:I',
           valueInputOption: 'RAW',
           insertDataOption: 'INSERT_ROWS',
           resource: {
             values: [
-              [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
+              [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate, form.updateDate]
             ]
           },
           auth: auth
@@ -199,7 +174,7 @@
           let newEntryReq = {
             spreadsheetId: this.spreadSheetId,
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-            range: 'Sheet1!A2:H',
+            range: 'Sheet1!A2:I',
             valueInputOption: 'RAW',
             insertDataOption: 'USER_ENTERED',
             resource: {
@@ -294,7 +269,7 @@
             i += 1
             if (this.cachedOnLineRows[index].id === rowData.id) {
               console.log("IT'S A MATCH! i= " + i)
-              let rangeToUpdate = 'A' + (i + 1) + ':H' + (i + 1) // row to be updated
+              let rangeToUpdate = 'A' + (i + 1) + ':I' + (i + 1) // row to be updated
               return rangeToUpdate
             }
           }
@@ -311,7 +286,7 @@
             valueInputOption: 'USER_ENTERED',
             resource: {
               values: [
-                [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate]
+                [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate, form.updateDate]
               ]
             },
             auth: auth
