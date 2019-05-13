@@ -31,7 +31,7 @@
       <el-form-item label="Boxes" prop="boxes">
         <el-input v-model="form.boxes" placeholder="Boxes"></el-input>
       </el-form-item>
-      <el-form-item>
+      <el-form-item label="Action">
         <el-button type="primary" @click="onSubmit('form')">Submit</el-button>
         <el-button @click="resetForm('form')">Reset</el-button>
       </el-form-item>
@@ -102,16 +102,17 @@
       onSubmit (formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
-            if (this.form.id === undefined) {
+            debugger
+            if (this.form.id === '') {
               this.form.id = shortid.generate()
               this.form.createdDate = new Date()
               this.form.updateDate = new Date()
-              this.$emit('newRow', this.form)
+              this.$emit('newRow', {...this.form})
             } else {
               this.form.updateDate = new Date()
-              this.$emit('updatedRow', this.form)
+              this.$emit('updatedRow', {...this.form})
             }
-            this.$refs[formName].resetFields()
+            this.resetForm(formName)
           } else {
             console.log('error submit!!')
             return false
@@ -119,8 +120,10 @@
         })
       },
       resetForm (formName) {
+        this.form.id = ''
+        this.form.createdDate = null
+        this.form.updateDate = null
         this.$refs[formName].resetFields()
-        this.$emit('reset')
       }
     }
   }

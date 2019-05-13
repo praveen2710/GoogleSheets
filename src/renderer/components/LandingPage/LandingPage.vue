@@ -25,8 +25,13 @@
     data () {
       return {
         form: {
+          company: '',
+          partyNo: '',
           kachaAmt: 0,
-          pakkaAmt: 0
+          pakkaAmt: 0,
+          id: '',
+          createdDate: null,
+          updateDate: null
         },
         show: true,
         // If modifying these scopes, delete token.json.
@@ -142,6 +147,7 @@
         })
       },
       addNewRow (form) {
+        console.log('adding new row' + JSON.stringify(form))
         const auth = this.auth
         const sheets = google.sheets({version: 'v4', auth})
         const sheetId = this.spreadsheetId
@@ -159,6 +165,7 @@
           auth: auth
         }, (err, res) => {
           if (err) {
+            console.log('saving new row locally' + JSON.stringify(form))
             this.writeDataToFile(form)
             return console.log('The API returned an error: ' + err)
           }
@@ -195,10 +202,8 @@
         let fileName = data.id
         mkdirp(fileLoc, function (err) {
           if (err) alert('Data was not saved please write it somewhere', err)
-          // path exists unless there was an error
           fs.writeFile(path.join(fileLoc, fileName), JSON.stringify(data), (err) => {
             if (err) alert('Data was not saved please write it somewhere', err)
-            // component.resetForm()
             component.loadFormData(component.auth)
           })
         })
