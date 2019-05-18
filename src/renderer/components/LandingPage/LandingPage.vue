@@ -242,11 +242,9 @@
         })
       },
       loadRowToEdit (editRow) {
-        debugger
         this.form = {...editRow}
       },
       findRowPosition (updatedRow) {
-        debugger
         if (this.offLineRowIds.includes(updatedRow.id)) {
           console.log('file saved offline overwrite it')
           this.writeDataToFile(updatedRow)
