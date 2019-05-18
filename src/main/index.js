@@ -1,6 +1,6 @@
 'use strict'
 
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 
 /**
  * Set `__static` path to static files in production
@@ -137,9 +137,6 @@ function createWindow () {
         {
           label: 'Setting',
           click () {
-            console.log('cicked on setting options 5')
-            // console.log(ipcRenderer)
-            // ipcRenderer.send('openSetting', 'test')
             openSettingsWindow()
           }
         }
@@ -210,7 +207,6 @@ function createWindow () {
   Menu.setApplicationMenu(menu)
 
   function openSettingsWindow () {
-    console.log('open settings window 4')
     settingWindow.show()
   }
 }
@@ -226,10 +222,6 @@ app.on('activate', () => {
   if (mainWindow === null) {
     createWindow()
   }
-})
-
-ipcMain.on('openSetting', () => {
-  console.log('event triggered in index.js')
 })
 
 /**

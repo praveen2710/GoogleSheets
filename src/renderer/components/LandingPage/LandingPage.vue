@@ -11,6 +11,7 @@
   import MajorList from '../FormPage/MajorList'
   const remote = require('electron').remote
   const app = remote.app
+
   const fs = require('fs')
   const {google} = require('googleapis')
   var mkdirp = require('mkdirp')
@@ -132,13 +133,13 @@
               let rowData = res.data.values[i]
               retrievedRows.push({
                 id: rowData[0],
-                entryDate: new Date(rowData[1]),
+                entryDate: new Date(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
                 company: rowData[2],
                 partyNo: rowData[3],
                 pakkaAmt: Number(rowData[4]),
                 kachaAmt: Number(rowData[5]),
                 boxes: rowData[6],
-                createdDate: new Date(rowData[7]),
+                createdDate: new Date(rowData[7]), // moment(rowData[7]).startOf('day').fromNow()
                 updateDate: new Date(rowData[8])
               })
             }
@@ -147,7 +148,6 @@
         })
       },
       addNewRow (form) {
-        console.log('adding new row' + JSON.stringify(form))
         const auth = this.auth
         const sheets = google.sheets({version: 'v4', auth})
         const sheetId = this.spreadsheetId
@@ -170,7 +170,6 @@
             return console.log('The API returned an error: ' + err)
           }
           this.loadFormData(auth)
-          // this.resetForm()
           this.uploadOfflineRows()
         })
       },
@@ -178,20 +177,20 @@
         return new Promise((resolve, reject) => {
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
-          let newEntryReq = {
-            spreadsheetId: this.spreadSheetId,
+          const sheetId = this.spreadSheetId
+          sheets.spreadsheets.values.append({
+            spreadsheetId: sheetId,
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!A2:I',
             valueInputOption: 'RAW',
-            insertDataOption: 'USER_ENTERED',
+            insertDataOption: 'INSERT_ROWS',
             resource: {
               values: [
-                [formData.id, formData.entryDate, formData.company, formData.partyNo, formData.pakkaAmt, formData.kachaAmt, formData.boxes, formData.createdDate]
+                [formData.id, formData.entryDate, formData.company, formData.partyNo, formData.pakkaAmt, formData.kachaAmt, formData.boxes, formData.createdDate, formData.updateDate]
               ]
             },
             auth: auth
-          }
-          sheets.spreadsheets.values.append(newEntryReq, (err, res) => {
+          }, (err, res) => {
             if (err) reject(err)
             resolve('Sucess')
           })
@@ -202,6 +201,7 @@
         let fileName = data.id
         mkdirp(fileLoc, function (err) {
           if (err) alert('Data was not saved please write it somewhere', err)
+          // path exists unless there was an error
           fs.writeFile(path.join(fileLoc, fileName), JSON.stringify(data), (err) => {
             if (err) alert('Data was not saved please write it somewhere', err)
             component.loadFormData(component.auth)
@@ -217,7 +217,14 @@
             fs.readFile(path.join(fileLoc, file), (err, content) => {
               if (err) return console.log('Error loading data file:', err)
               // Authorize a client with credentials, then call the Google Sheets API.
-              component.rows.push(JSON.parse(content))
+              // TODO fix the date when
+              let offLineRowData = JSON.parse(content)
+              offLineRowData.entryDate = new Date(offLineRowData.entryDate)
+              offLineRowData.createdDate = new Date(offLineRowData.createdDate)
+              offLineRowData.updateDate = new Date(offLineRowData.updateDate)
+              offLineRowData.pakkaAmt = Number(offLineRowData.pakkaAmt)
+              offLineRowData.kachaAmt = Number(offLineRowData.kachaAmt)
+              component.rows.push(offLineRowData)
             })
           })
         })
@@ -252,9 +259,11 @@
         })
       },
       loadRowToEdit (editRow) {
+        debugger
         this.form = {...editRow}
       },
       findRowPosition (updatedRow) {
+        debugger
         if (this.offLineRowIds.includes(updatedRow.id)) {
           console.log('file saved offline overwrite it')
           this.writeDataToFile(updatedRow)
@@ -284,19 +293,19 @@
         return new Promise((resolve, reject) => {
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
-          var updateRequest = {
-            spreadsheetId: this.spreadsheetId,
+          const sheetId = this.spreadsheetId
+          sheets.spreadsheets.values.update({
+            spreadSheetId: sheetId,
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!' + range,
-            valueInputOption: 'USER_ENTERED',
+            valueInputOption: 'RAW',
             resource: {
               values: [
                 [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate, form.updateDate]
               ]
             },
             auth: auth
-          }
-          sheets.spreadsheets.values.update(updateRequest, (err, res) => {
+          }, (err, res) => {
             if (err) {
               reject(err)
             }

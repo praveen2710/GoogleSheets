@@ -102,7 +102,6 @@
       onSubmit (formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
-            debugger
             if (this.form.id === '') {
               this.form.id = shortid.generate()
               this.form.createdDate = new Date()
