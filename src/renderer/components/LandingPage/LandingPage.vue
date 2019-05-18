@@ -177,9 +177,8 @@
         return new Promise((resolve, reject) => {
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
-          const sheetId = this.spreadSheetId
-          sheets.spreadsheets.values.append({
-            spreadsheetId: sheetId,
+          let writeReq = {
+            spreadsheetId: store.get('docId'),
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!A2:I',
             valueInputOption: 'RAW',
@@ -190,7 +189,8 @@
               ]
             },
             auth: auth
-          }, (err, res) => {
+          }
+          sheets.spreadsheets.values.append(writeReq, (err, res) => {
             if (err) reject(err)
             resolve('Sucess')
           })
@@ -243,8 +243,8 @@
                 console.log('row never uploaded creating new entry')
                 component.writeDataOnline(rowData).then(() => {
                   fs.unlinkSync(path.join(fileLoc, file))
-                }).catch(() => {
-                  console.log('upload failed will retry again later')
+                }).catch((err) => {
+                  console.log('upload failed will retry again later', err)
                 })
               } else {
                 console.log('row exists already updating it')
