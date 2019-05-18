@@ -1,6 +1,6 @@
 <template>
   <div id="wrapper">
-    <p>{{connectionError}}</p>
+    <h1>{{connectionError}}</h1>
     <form-page :form="form" @newRow='addNewRow' @updatedRow='findRowPosition'></form-page>
     <major-list :rows="rows" @editRow='loadRowToEdit'></major-list>
   </div>
@@ -125,14 +125,14 @@
           sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-            range: 'Sheet1!A2:I'
+            range: 'Sheet1!A2:J'
           }, (err, res) => {
-            if (err) return reject(err)
+            if (err) reject(err)
             let retrievedRows = []
             for (let i in res.data.values) {
               let rowData = res.data.values[i]
               retrievedRows.push({
-                id: rowData[0],
+                sno: Number(rowData[0]),
                 entryDate: new Date(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
                 company: rowData[2],
                 partyNo: rowData[3],
@@ -140,7 +140,8 @@
                 kachaAmt: Number(rowData[5]),
                 boxes: rowData[6],
                 createdDate: new Date(rowData[7]), // moment(rowData[7]).startOf('day').fromNow()
-                updateDate: new Date(rowData[8])
+                updateDate: new Date(rowData[8]),
+                id: rowData[9]
               })
             }
             resolve(retrievedRows)
@@ -148,49 +149,32 @@
         })
       },
       addNewRow (form) {
-        const auth = this.auth
-        const sheets = google.sheets({version: 'v4', auth})
-        const sheetId = this.spreadsheetId
-        sheets.spreadsheets.values.append({
-          spreadsheetId: sheetId,
-          // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-          range: 'Sheet1!A2:I',
-          valueInputOption: 'RAW',
-          insertDataOption: 'INSERT_ROWS',
-          resource: {
-            values: [
-              [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate, form.updateDate]
-            ]
-          },
-          auth: auth
-        }, (err, res) => {
-          if (err) {
-            console.log('saving new row locally' + JSON.stringify(form))
-            this.writeDataToFile(form)
-            return console.log('The API returned an error: ' + err)
-          }
-          this.loadFormData(auth)
+        this.writeDataOnline(form).then(() => {
+          this.loadFormData(this.auth)
           this.uploadOfflineRows()
+        }).catch((err) => {
+          console.log('failed to upload saving it locally: ', err)
+          this.writeDataToFile(form)
         })
       },
       writeDataOnline (formData) {
         return new Promise((resolve, reject) => {
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
-          let writeReq = {
+          let newEntry = {
             spreadsheetId: store.get('docId'),
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-            range: 'Sheet1!A2:I',
+            range: 'Sheet1!A2:J',
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
             resource: {
               values: [
-                [formData.id, formData.entryDate, formData.company, formData.partyNo, formData.pakkaAmt, formData.kachaAmt, formData.boxes, formData.createdDate, formData.updateDate]
+                [formData.sno, formData.entryDate, formData.company, formData.partyNo, formData.pakkaAmt, formData.kachaAmt, formData.boxes, formData.createdDate, formData.updateDate, formData.id]
               ]
             },
             auth: auth
           }
-          sheets.spreadsheets.values.append(writeReq, (err, res) => {
+          sheets.spreadsheets.values.append(newEntry, (err, res) => {
             if (err) reject(err)
             resolve('Sucess')
           })
@@ -216,12 +200,11 @@
             component.offLineRowIds.push(file)
             fs.readFile(path.join(fileLoc, file), (err, content) => {
               if (err) return console.log('Error loading data file:', err)
-              // Authorize a client with credentials, then call the Google Sheets API.
-              // TODO fix the date when
               let offLineRowData = JSON.parse(content)
               offLineRowData.entryDate = new Date(offLineRowData.entryDate)
               offLineRowData.createdDate = new Date(offLineRowData.createdDate)
               offLineRowData.updateDate = new Date(offLineRowData.updateDate)
+              offLineRowData.sno = Number(offLineRowData.sno)
               offLineRowData.pakkaAmt = Number(offLineRowData.pakkaAmt)
               offLineRowData.kachaAmt = Number(offLineRowData.kachaAmt)
               component.rows.push(offLineRowData)
@@ -250,8 +233,8 @@
                 console.log('row exists already updating it')
                 component.updateOnlineRow(rowData, this.findRowOnline(rowData)).then(() => {
                   fs.unlinkSync(path.join(fileLoc, file))
-                }).catch(() => {
-                  console.log('upload failed will retry again later')
+                }).catch((err) => {
+                  console.log('upload failed will retry again later: ', err)
                 })
               }
             })
@@ -283,7 +266,7 @@
             i += 1
             if (this.cachedOnLineRows[index].id === rowData.id) {
               console.log("IT'S A MATCH! i= " + i)
-              let rangeToUpdate = 'A' + (i + 1) + ':I' + (i + 1) // row to be updated
+              let rangeToUpdate = 'A' + (i + 1) + ':J' + (i + 1) // row to be updated
               return rangeToUpdate
             }
           }
@@ -293,22 +276,20 @@
         return new Promise((resolve, reject) => {
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
-          const sheetId = this.spreadsheetId
-          sheets.spreadsheets.values.update({
-            spreadSheetId: sheetId,
+          let updateEntry = {
+            spreadSheetId: store.get('docId'),
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!' + range,
             valueInputOption: 'RAW',
             resource: {
               values: [
-                [form.id, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate, form.updateDate]
+                [form.sno, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate, form.updateDate, form.id]
               ]
             },
             auth: auth
-          }, (err, res) => {
-            if (err) {
-              reject(err)
-            }
+          }
+          sheets.spreadsheets.values.update(updateEntry, (err, res) => {
+            if (err) reject(err)
             resolve('Success')
           })
         })

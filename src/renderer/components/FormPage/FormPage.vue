@@ -2,6 +2,9 @@
   <div>
     <h2>Add/Edit Entry</h2>
     <el-form  :label-position="labelPosition" :inline="true" :rules="rules" :model="form" ref="form" class="demo-form-inline" size="mini">
+      <el-form-item label="SNO" prop="sno">
+        <el-input-number v-model="form.sno" :min="0" :max="10000"></el-input-number>
+      </el-form-item>
       <el-form-item label="Date" prop="entryDate">
         <el-date-picker
           v-model="form.entryDate"
@@ -73,6 +76,9 @@
           }]
         },
         rules: {
+          sno: [
+            { required: true, message: 'Please input SNO' }
+          ],
           entryDate: [
             { type: 'date', required: true, message: 'Please pick a date', trigger: 'change' }
           ],

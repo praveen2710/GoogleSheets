@@ -9,6 +9,12 @@
     max-height="500"
     style="width: 100%">
       <el-table-column
+        prop="sno"
+        sortable
+        fixed
+        label="S.No">
+      </el-table-column>
+      <el-table-column
         prop="entryDate"
         sortable
         fixed
