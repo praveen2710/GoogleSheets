@@ -4,7 +4,7 @@
        <h1 class="error">{{connectionError}}</h1>
     </div>
     <div v-else> 
-      <form-page :form="form" @newRow='addNewRow' @updatedRow='findRowPosition'></form-page>
+      <form-page :form="form" :companyList="companyList" :partyNoList="partyNoList" @newRow='addNewRow' @updatedRow='findRowPosition'></form-page>
       <major-list :rows="rows" @editRow='loadRowToEdit'></major-list>
     </div>
   </div>
@@ -50,7 +50,9 @@
         cachedOnLineRows: [],
         auth: {},
         connectionError: '',
-        spreadsheetId: ''
+        spreadsheetId: '',
+        companyList: [],
+        partyNoList: []
       }
     },
     created () {
@@ -58,6 +60,7 @@
         this.spreadsheetId = store.get('docId')
         if (store.has('credentials.json')) {
           this.authorize(JSON.parse(store.get('credentials.json')), this.loadFormData)
+          this.retrieveCompaniesList()
         } else {
           this.connectionError = 'credentials not found'
         }
@@ -68,6 +71,20 @@
     methods: {
       open (link) {
         this.$electron.shell.openExternal(link)
+      },
+      retrieveCompaniesList () {
+        let auth = this.auth
+        const sheets = google.sheets({version: 'v4', auth})
+        sheets.spreadsheets.values.get({
+          spreadsheetId: store.get('docId'),
+          range: 'Companies!A1:B'
+        }, (err, res) => {
+          if (err) return console.error('Error while trying to load companies list', err)
+          for (let i in res.data.values) {
+            if (res.data.values[i][0] !== undefined) this.companyList.push(res.data.values[i][0])
+            if (res.data.values[i][1] !== undefined) this.partyNoList.push(res.data.values[i][1])
+          }
+        })
       },
       /**
        * Create an OAuth2 client with the given credentials, and then execute the
@@ -137,7 +154,7 @@
               let rowData = res.data.values[i]
               retrievedRows.push({
                 sno: Number(rowData[0]),
-                entryDate: new Date(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
+                entryDate: this.toDate(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
                 company: rowData[2],
                 partyNo: rowData[3],
                 pakkaAmt: Number(rowData[4]),
@@ -167,7 +184,6 @@
           const sheets = google.sheets({version: 'v4', auth})
           let newEntry = {
             spreadsheetId: store.get('docId'),
-            // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!A2:J',
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
@@ -279,8 +295,7 @@
           const auth = this.auth
           const sheets = google.sheets({version: 'v4', auth})
           let updateEntry = {
-            spreadSheetId: store.get('docId'),
-            // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
+            spreadsheetId: store.get('docId'),
             range: 'Sheet1!' + range,
             valueInputOption: 'RAW',
             resource: {
@@ -290,11 +305,16 @@
             },
             auth: auth
           }
+          debugger
           sheets.spreadsheets.values.update(updateEntry, (err, res) => {
             if (err) reject(err)
             resolve('Success')
           })
         })
+      },
+      toDate (dateStr) {
+        const [day, month, year] = dateStr.split('/')
+        return new Date(year, month - 1, day)
       }
     }
   }

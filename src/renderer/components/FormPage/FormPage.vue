@@ -14,11 +14,29 @@
         </el-date-picker>
       </el-form-item>
       <el-form-item label="Company" prop="company">
-        <el-input v-model="form.company" placeholder="Company Name"></el-input>
-      </el-form-item>
+        <el-select v-model="form.company" placeholder="please select your zone" filterable>
+          <el-option v-for="company in companyList"
+            :key="company"
+            :label="company"
+            :value="company">
+          </el-option>
+        </el-select>
+      </el-form-item> 
       <el-form-item label="Party No" prop="partyNo">
+        <el-select v-model="form.partyNo" placeholder="please select your zone" filterable>
+          <el-option v-for="partyNo in partyNoList"
+            :key="partyNo"
+            :label="partyNo"
+            :value="partyNo">
+          </el-option>
+        </el-select>
+      </el-form-item>   
+      <!-- <el-form-item label="Company" prop="company">
+        <el-input v-model="form.company" placeholder="Company Name"></el-input>
+      </el-form-item> -->
+      <!-- <el-form-item label="Party No" prop="partyNo">
         <el-input v-model="form.partyNo" placeholder="Party No"></el-input>
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item label="Pakka Amt"  prop="pakkaAmt" :rules="[
       { required: true, message: 'amount is required'},
       { type: 'number', message: 'amount must be a number'}
@@ -46,7 +64,7 @@
   const shortid = require('shortid')
 
   export default {
-    props: ['form'],
+    props: ['form', 'companyList', 'partyNoList'],
     data () {
       return {
         show: true,
@@ -108,6 +126,7 @@
       onSubmit (formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
+            this.form.entryDate = this.convertDate(this.form.entryDate)
             if (this.form.id === '') {
               this.form.id = shortid.generate()
               this.form.createdDate = new Date()
@@ -129,6 +148,11 @@
         this.form.createdDate = null
         this.form.updateDate = null
         this.$refs[formName].resetFields()
+      },
+      convertDate (inputFormat) {
+        function pad (s) { return (s < 10) ? '0' + s : s }
+        var d = new Date(inputFormat)
+        return [pad(d.getDate()), pad(d.getMonth() + 1), d.getFullYear()].join('/')
       }
     }
   }
