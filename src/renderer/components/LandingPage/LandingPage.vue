@@ -131,11 +131,13 @@
         this.rows = []
         this.auth = auth
         const sheets = google.sheets({version: 'v4', auth})
+        this.uploadOfflineRows()
         this.readOnlineRows(sheets, this.spreadSheetId).then((retrievedRows) => {
           this.cachedOnLineRows = retrievedRows
           this.rows.push(...retrievedRows)
         }).catch((err) => {
           console.log('failed to retrieve online data currently', err)
+          this.cachedOnLineRows = this.cachedOnLineRows.filter(row => !this.offLineRowIds.includes(row.id))
           this.rows.push(...this.cachedOnLineRows)
         })
         this.readOfflineRows()
@@ -145,6 +147,7 @@
         return new Promise((resolve, reject) => {
           sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
+            // valueRenderOption: 'UNFORMATTED_VALUE',
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!A2:J'
           }, (err, res) => {
@@ -221,7 +224,7 @@
             fs.readFile(path.join(fileLoc, file), (err, content) => {
               if (err) return console.log('Error loading data file:', err)
               let offLineRowData = JSON.parse(content)
-              offLineRowData.entryDate = new Date(offLineRowData.entryDate)
+              offLineRowData.entryDate = this.toDate(offLineRowData.entryDate)
               offLineRowData.createdDate = new Date(offLineRowData.createdDate)
               offLineRowData.updateDate = new Date(offLineRowData.updateDate)
               offLineRowData.sno = Number(offLineRowData.sno)
