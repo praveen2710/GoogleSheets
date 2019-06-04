@@ -1,6 +1,6 @@
 {
   "name": "googlesheets",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "",
   "description": "test to figure out how to make calls to google sheets api",
   "license": null,
