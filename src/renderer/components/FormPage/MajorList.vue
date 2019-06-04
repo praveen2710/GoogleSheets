@@ -4,7 +4,7 @@
     <el-table
     stripe
     border
-    :data="rows.filter(data => !search || data.company.toLowerCase().includes(search.toLowerCase()) || data.partyNo.toLowerCase().includes(search.toLowerCase()))"
+    :data="rows.filter(data => !search || data.company.toLowerCase().includes(search.toLowerCase()) || data.partyNo.toLowerCase().includes(search.toLowerCase()) || data.sno.toString().includes(search.toLowerCase()))"
     :default-sort = "{prop: 'updateDate', order: 'descending'}"
     max-height="500"
     style="width: 100%">

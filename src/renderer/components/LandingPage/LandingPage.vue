@@ -13,6 +13,8 @@
 <script>
   import FormPage from '../FormPage/FormPage'
   import MajorList from '../FormPage/MajorList'
+  import authMixin from '../../mixins/authMixin'
+  
   const remote = require('electron').remote
   const app = remote.app
 
@@ -27,6 +29,7 @@
   export default {
     name: 'landing-page',
     components: {FormPage, MajorList},
+    mixins: [authMixin],
     data () {
       return {
         form: {
@@ -61,6 +64,7 @@
         if (store.has('credentials.json')) {
           this.authorize(JSON.parse(store.get('credentials.json')), this.loadFormData)
           this.retrieveCompaniesList()
+          this.retrievePartyNoList()
         } else {
           this.connectionError = 'credentials not found'
         }
@@ -77,50 +81,26 @@
         const sheets = google.sheets({version: 'v4', auth})
         sheets.spreadsheets.values.get({
           spreadsheetId: store.get('docId'),
-          range: 'Companies!A1:B'
+          range: 'Companies!A1:A'
         }, (err, res) => {
           if (err) return console.error('Error while trying to load companies list', err)
           for (let i in res.data.values) {
-            if (res.data.values[i][0] !== undefined) this.companyList.push(res.data.values[i][0])
-            if (res.data.values[i][1] !== undefined) this.partyNoList.push(res.data.values[i][1])
+            this.companyList.push(res.data.values[i][0])
           }
         })
       },
-      /**
-       * Create an OAuth2 client with the given credentials, and then execute the
-       * given callback function.
-       * @param {Object} credentials The authorization client credentials.
-       * @param {function} callback The callback to call with the authorized client.
-       */
-      authorize (credentials, callback) {
-        const oAuth2Client = new google.auth.OAuth2(
-          credentials.installed.client_id, credentials.installed.client_secret, credentials.installed.redirect_uris[0])
-        // Check if we have previously stored a token.
-        if (store.has('token.json')) {
-          oAuth2Client.setCredentials(store.get('token.json'))
-          callback(oAuth2Client)
-        } else {
-          this.getNewToken(oAuth2Client, callback)
-        }
-      },
-      /**
-       * Get and store new token after prompting for user authorization, and then
-       * execute the given callback with the authorized OAuth2 client.
-       * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
-       * @param {getEventsCallback} callback The callback for the authorized client.
-       */
-      getNewToken (oAuth2Client, callback) {
-        if (store.has('code')) {
-          let code = store.get('code')
-          oAuth2Client.getToken(code, (err, token) => {
-            if (err) return console.error('Error while trying to retrieve access token', err)
-            store.set('token.json', token)
-            oAuth2Client.setCredentials(token)
-            callback(oAuth2Client)
-          })
-        } else {
-          this.connectionError = 'secret code not set'
-        }
+      retrievePartyNoList () {
+        let auth = this.auth
+        const sheets = google.sheets({version: 'v4', auth})
+        sheets.spreadsheets.values.get({
+          spreadsheetId: store.get('docId'),
+          range: 'PartyNo!A1:A'
+        }, (err, res) => {
+          if (err) return console.error('Error while trying to load partyNo list', err)
+          for (let i in res.data.values) {
+            this.partyNoList.push(res.data.values[i][0])
+          }
+        })
       },
       /**
        * Prints the names and majors of students in a sample spreadsheet:
@@ -151,7 +131,7 @@
             // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
             range: 'Sheet1!A2:J'
           }, (err, res) => {
-            if (err) reject(err)
+            if (err) return reject(err)
             let retrievedRows = []
             for (let i in res.data.values) {
               let rowData = res.data.values[i]
@@ -308,9 +288,8 @@
             },
             auth: auth
           }
-          debugger
           sheets.spreadsheets.values.update(updateEntry, (err, res) => {
-            if (err) reject(err)
+            if (err) return reject(err)
             resolve('Success')
           })
         })

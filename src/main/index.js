@@ -12,6 +12,8 @@ if (process.env.NODE_ENV !== 'development') {
 
 let mainWindow
 let settingWindow
+let companyWindow
+let partyNoWindow
 
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
@@ -36,8 +38,28 @@ function createWindow () {
     model: true
   })
 
+  companyWindow = new BrowserWindow({
+    height: 400,
+    show: false,
+    width: 400,
+    parent: mainWindow,
+    alwaysOnTop: true,
+    model: true
+  })
+
+  partyNoWindow = new BrowserWindow({
+    height: 400,
+    show: false,
+    width: 400,
+    parent: mainWindow,
+    alwaysOnTop: true,
+    model: true
+  })
+
   mainWindow.loadURL(winURL)
   settingWindow.loadURL(winURL + '#/settings')
+  companyWindow.loadURL(winURL + '#/company')
+  partyNoWindow.loadURL(winURL + '#/partyNo')
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -46,6 +68,18 @@ function createWindow () {
   settingWindow.on('close', (e) => {
     e.preventDefault()
     settingWindow.hide()
+  })
+
+  companyWindow.on('close', (e) => {
+    e.preventDefault()
+    companyWindow.hide()
+    mainWindow.reload()
+  })
+
+  partyNoWindow.on('close', (e) => {
+    e.preventDefault()
+    partyNoWindow.hide()
+    mainWindow.reload()
   })
 
   // require('./mainmenu')
@@ -139,6 +173,18 @@ function createWindow () {
           click () {
             openSettingsWindow()
           }
+        },
+        {
+          label: 'Add Company',
+          click () {
+            openCompanyWindow()
+          }
+        },
+        {
+          label: 'Add PartyNo',
+          click () {
+            openPartyNoWindow()
+          }
         }
       ]
     }
@@ -208,6 +254,14 @@ function createWindow () {
 
   function openSettingsWindow () {
     settingWindow.show()
+  }
+
+  function openCompanyWindow () {
+    companyWindow.show()
+  }
+
+  function openPartyNoWindow () {
+    partyNoWindow.show()
   }
 }
 app.on('ready', createWindow)
