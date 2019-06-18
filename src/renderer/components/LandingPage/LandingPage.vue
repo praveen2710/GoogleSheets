@@ -22,7 +22,7 @@
   const {google} = require('googleapis')
   var mkdirp = require('mkdirp')
   const path = require('path')
-  const fileLoc = path.join(app.getPath('home'), 'offlineData')
+  const fileLoc = path.join(app.getPath('home'), 'offlinePackaging')
   const Store = require('electron-store')
   const store = new Store()
 
