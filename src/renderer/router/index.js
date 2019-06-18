@@ -20,11 +20,6 @@ export default new Router({
       component: require('@/components/SettingsPage/Settings').default
     },
     {
-      path: '/company',
-      name: 'company-page',
-      component: require('@/components/CompanyPage/AddCompany').default
-    },
-    {
       path: '/partyNo',
       name: 'partyNo-page',
       component: require('@/components/PartyNoPage/AddPartyNo').default

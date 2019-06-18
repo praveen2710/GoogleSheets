@@ -61,6 +61,7 @@
         if (store.has('credentials.json')) {
           this.authorize(JSON.parse(store.get('credentials.json')), this.loadFormData)
           this.retrievePartyNoList()
+          this.uploadOfflineRows()
         } else {
           this.connectionError = 'credentials not found'
         }
@@ -94,7 +95,6 @@
         this.rows = []
         this.auth = auth
         const sheets = google.sheets({version: 'v4', auth})
-        this.uploadOfflineRows()
         this.readOnlineRows(sheets, this.spreadSheetId).then((retrievedRows) => {
           this.cachedOnLineRows = retrievedRows
           this.rows.push(...retrievedRows)
@@ -118,11 +118,11 @@
               let rowData = res.data.values[i]
               retrievedRows.push({
                 sno: Number(rowData[0]),
-                entryDate: this.toDate(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
+                entryDate: this.toDate(rowData[1]),
                 partyNo: rowData[2],
-                boxes: rowData[3],
+                boxes: Number(rowData[3]),
                 loose: rowData[4],
-                createdDate: new Date(rowData[5]), // moment(rowData[7]).startOf('day').fromNow()
+                createdDate: new Date(rowData[5]),
                 updateDate: new Date(rowData[6]),
                 id: rowData[7]
               })

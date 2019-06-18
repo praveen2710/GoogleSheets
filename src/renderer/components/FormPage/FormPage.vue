@@ -26,10 +26,10 @@
       { required: true, message: 'amount is required'},
       { type: 'number', message: 'amount must be a number'}
       ]">
-        <el-input v-model.number="form.boxes" placeholder="Kacha"></el-input>
+        <el-input v-model.number="form.boxes" placeholder="Boxes"></el-input>
       </el-form-item>
       <el-form-item label="Loose" prop="loose">
-        <el-input v-model="form.loose" placeholder="Boxes"></el-input>
+        <el-input v-model="form.loose" placeholder="Loose"></el-input>
       </el-form-item>
       <el-form-item label="Action">
         <el-button type="primary" @click="onSubmit('form')">Submit</el-button>
@@ -43,7 +43,7 @@
   const shortid = require('shortid')
 
   export default {
-    props: ['form', 'companyList', 'partyNoList'],
+    props: ['form', 'partyNoList'],
     data () {
       return {
         show: true,
