@@ -65,6 +65,7 @@
           this.authorize(JSON.parse(store.get('credentials.json')), this.loadFormData)
           this.retrieveCompaniesList()
           this.retrievePartyNoList()
+          this.uploadOfflineRows()
         } else {
           this.connectionError = 'credentials not found'
         }
@@ -111,7 +112,6 @@
         this.rows = []
         this.auth = auth
         const sheets = google.sheets({version: 'v4', auth})
-        this.uploadOfflineRows()
         this.readOnlineRows(sheets, this.spreadSheetId).then((retrievedRows) => {
           this.cachedOnLineRows = retrievedRows
           this.rows.push(...retrievedRows)
