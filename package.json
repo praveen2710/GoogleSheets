@@ -22,7 +22,7 @@
     "postinstall": "npm run lint:fix"
   },
   "build": {
-    "productName": "Challan",
+    "productName": "Packaging",
     "appId": "com.mahaveer.googlesheets",
     "directories": {
       "output": "build"

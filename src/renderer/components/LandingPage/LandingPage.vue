@@ -4,7 +4,7 @@
        <h1 class="error">{{connectionError}}</h1>
     </div>
     <div v-else> 
-      <form-page :form="form" :companyList="companyList" :partyNoList="partyNoList" @newRow='addNewRow' @updatedRow='findRowPosition'></form-page>
+      <form-page :form="form" :partyNoList="partyNoList" @newRow='addNewRow' @updatedRow='findRowPosition'></form-page>
       <major-list :rows="rows" @editRow='loadRowToEdit'></major-list>
     </div>
   </div>
@@ -33,10 +33,7 @@
     data () {
       return {
         form: {
-          company: '',
           partyNo: '',
-          kachaAmt: 0,
-          pakkaAmt: 0,
           id: '',
           createdDate: null,
           updateDate: null
@@ -63,7 +60,6 @@
         this.spreadsheetId = store.get('docId')
         if (store.has('credentials.json')) {
           this.authorize(JSON.parse(store.get('credentials.json')), this.loadFormData)
-          this.retrieveCompaniesList()
           this.retrievePartyNoList()
         } else {
           this.connectionError = 'credentials not found'
@@ -75,19 +71,6 @@
     methods: {
       open (link) {
         this.$electron.shell.openExternal(link)
-      },
-      retrieveCompaniesList () {
-        let auth = this.auth
-        const sheets = google.sheets({version: 'v4', auth})
-        sheets.spreadsheets.values.get({
-          spreadsheetId: store.get('docId'),
-          range: 'Companies!A1:A'
-        }, (err, res) => {
-          if (err) return console.error('Error while trying to load companies list', err)
-          for (let i in res.data.values) {
-            this.companyList.push(res.data.values[i][0])
-          }
-        })
       },
       retrievePartyNoList () {
         let auth = this.auth
@@ -127,9 +110,7 @@
         return new Promise((resolve, reject) => {
           sheets.spreadsheets.values.get({
             spreadsheetId: sheetId,
-            // valueRenderOption: 'UNFORMATTED_VALUE',
-            // spreadsheetId: '14pkSLWxLYMdPO5eYyW0cEV657g1sExqh-5t-k3wfivg',
-            range: 'Sheet1!A2:J'
+            range: 'Packaging!A2:J'
           }, (err, res) => {
             if (err) return reject(err)
             let retrievedRows = []
@@ -138,14 +119,12 @@
               retrievedRows.push({
                 sno: Number(rowData[0]),
                 entryDate: this.toDate(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
-                company: rowData[2],
-                partyNo: rowData[3],
-                pakkaAmt: Number(rowData[4]),
-                kachaAmt: Number(rowData[5]),
-                boxes: rowData[6],
-                createdDate: new Date(rowData[7]), // moment(rowData[7]).startOf('day').fromNow()
-                updateDate: new Date(rowData[8]),
-                id: rowData[9]
+                partyNo: rowData[2],
+                boxes: rowData[3],
+                loose: rowData[4],
+                createdDate: new Date(rowData[5]), // moment(rowData[7]).startOf('day').fromNow()
+                updateDate: new Date(rowData[6]),
+                id: rowData[7]
               })
             }
             resolve(retrievedRows)
@@ -167,12 +146,12 @@
           const sheets = google.sheets({version: 'v4', auth})
           let newEntry = {
             spreadsheetId: store.get('docId'),
-            range: 'Sheet1!A2:J',
+            range: 'Packaging!A2:J',
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
             resource: {
               values: [
-                [formData.sno, formData.entryDate, formData.company, formData.partyNo, formData.pakkaAmt, formData.kachaAmt, formData.boxes, formData.createdDate, formData.updateDate, formData.id]
+                [formData.sno, formData.entryDate, formData.partyNo, formData.boxes, formData.loose, formData.createdDate, formData.updateDate, formData.id]
               ]
             },
             auth: auth
@@ -208,8 +187,7 @@
               offLineRowData.createdDate = new Date(offLineRowData.createdDate)
               offLineRowData.updateDate = new Date(offLineRowData.updateDate)
               offLineRowData.sno = Number(offLineRowData.sno)
-              offLineRowData.pakkaAmt = Number(offLineRowData.pakkaAmt)
-              offLineRowData.kachaAmt = Number(offLineRowData.kachaAmt)
+              offLineRowData.boxes = Number(offLineRowData.boxes)
               component.rows.push(offLineRowData)
             })
           })
@@ -279,11 +257,11 @@
           const sheets = google.sheets({version: 'v4', auth})
           let updateEntry = {
             spreadsheetId: store.get('docId'),
-            range: 'Sheet1!' + range,
+            range: 'Packaging!' + range,
             valueInputOption: 'RAW',
             resource: {
               values: [
-                [form.sno, form.entryDate, form.company, form.partyNo, form.pakkaAmt, form.kachaAmt, form.boxes, form.createdDate, form.updateDate, form.id]
+                [form.sno, form.entryDate, form.partyNo, form.boxes, form.loose, form.createdDate, form.updateDate, form.id]
               ]
             },
             auth: auth

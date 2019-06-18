@@ -13,15 +13,6 @@
           :picker-options="pickerOptions">
         </el-date-picker>
       </el-form-item>
-      <el-form-item label="Company" prop="company">
-        <el-select v-model="form.company" placeholder="please select your zone" filterable>
-          <el-option v-for="company in companyList"
-            :key="company"
-            :label="company"
-            :value="company">
-          </el-option>
-        </el-select>
-      </el-form-item> 
       <el-form-item label="Party No" prop="partyNo">
         <el-select v-model="form.partyNo" placeholder="please select your zone" filterable>
           <el-option v-for="partyNo in partyNoList"
@@ -31,26 +22,14 @@
           </el-option>
         </el-select>
       </el-form-item>   
-      <!-- <el-form-item label="Company" prop="company">
-        <el-input v-model="form.company" placeholder="Company Name"></el-input>
-      </el-form-item> -->
-      <!-- <el-form-item label="Party No" prop="partyNo">
-        <el-input v-model="form.partyNo" placeholder="Party No"></el-input>
-      </el-form-item> -->
-      <el-form-item label="Pakka Amt"  prop="pakkaAmt" :rules="[
-      { required: true, message: 'amount is required'},
-      { type: 'number', message: 'amount must be a number'}
-      ]"> 
-        <el-input type="amount" v-model.number="form.pakkaAmt" placeholder="Pakka"></el-input>
-      </el-form-item>
-      <el-form-item label="Kacha Amt" prop="kachaAmt" :rules="[
+      <el-form-item label="Boxes" prop="boxes" :rules="[
       { required: true, message: 'amount is required'},
       { type: 'number', message: 'amount must be a number'}
       ]">
-        <el-input v-model.number="form.kachaAmt" placeholder="Kacha"></el-input>
+        <el-input v-model.number="form.boxes" placeholder="Kacha"></el-input>
       </el-form-item>
-      <el-form-item label="Boxes" prop="boxes">
-        <el-input v-model="form.boxes" placeholder="Boxes"></el-input>
+      <el-form-item label="Loose" prop="loose">
+        <el-input v-model="form.loose" placeholder="Boxes"></el-input>
       </el-form-item>
       <el-form-item label="Action">
         <el-button type="primary" @click="onSubmit('form')">Submit</el-button>
@@ -100,19 +79,8 @@
           entryDate: [
             { type: 'date', required: true, message: 'Please pick a date', trigger: 'change' }
           ],
-          company: [
-            { required: true, message: 'Please input Company name' }
-          ],
           partyNo: [
             { required: true, message: 'Please input partyNo name' }
-          ],
-          pakkaAmt: [
-            { required: true, message: 'amount is required' },
-            { type: 'number', message: 'amount must be a number' }
-          ],
-          kachaAmt: [
-            { required: true, message: 'amount is required' },
-            { type: 'number', message: 'amount must be a number' }
           ],
           boxes: [
             { required: true, message: 'Please input boxes detail' }

@@ -4,7 +4,7 @@
     <el-table
     stripe
     border
-    :data="rows.filter(data => !search || data.company.toLowerCase().includes(search.toLowerCase()) || data.partyNo.toLowerCase().includes(search.toLowerCase()) || data.sno.toString().includes(search.toLowerCase()))"
+    :data="rows.filter(data => !search || data.partyNo.toLowerCase().includes(search.toLowerCase()) || data.sno.toString().includes(search.toLowerCase()))"
     :default-sort = "{prop: 'updateDate', order: 'descending'}"
     max-height="500"
     style="width: 100%">
@@ -22,29 +22,17 @@
         :formatter="entryDateFormatting">
       </el-table-column>
       <el-table-column
-        prop="company"
-        label="Company"
-        fixed
-        sortable>
-      </el-table-column>
-      <el-table-column
         prop="partyNo"
         label="Party No"
         sortable>
       </el-table-column>
       <el-table-column
-        prop="pakkaAmt"
-        label="Pakka"
-        sortable>
-      </el-table-column>
-      <el-table-column
-        prop="kachaAmt"
-        label="Kaccha"
-        sortable>
-      </el-table-column>
-      <el-table-column
         prop="boxes"
         label="Boxes">
+      </el-table-column>
+      <el-table-column
+        prop="loose"
+        label="Loose">
       </el-table-column>
       <el-table-column
         prop="updateDate"
