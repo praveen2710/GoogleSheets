@@ -12,7 +12,7 @@ import 'element-ui/lib/theme-chalk/index.css'
 
 Vue.use(ElementUI, { locale })
 export default {
-  name: 'googlesheets'
+  name: 'packaging'
 }
 </script>
 

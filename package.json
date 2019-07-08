@@ -1,6 +1,6 @@
 {
-  "name": "googlesheets",
-  "version": "0.0.2",
+  "name": "Packaging",
+  "version": "0.0.1",
   "author": "",
   "description": "test to figure out how to make calls to google sheets api",
   "license": null,
@@ -23,7 +23,7 @@
   },
   "build": {
     "productName": "Packaging",
-    "appId": "com.mahaveer.googlesheets",
+    "appId": "com.mahaveer.packaging",
     "directories": {
       "output": "build"
     },
