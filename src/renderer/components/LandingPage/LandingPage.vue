@@ -59,7 +59,6 @@
       }
     },
     created () {
-      debugger
       if (store.has('docId')) {
         this.spreadsheetId = store.get('docId')
         if (store.has('credentials.json')) {
@@ -112,7 +111,6 @@
       loadFormData (auth) {
         this.rows = []
         this.auth = auth
-        debugger
         const sheets = google.sheets({version: 'v4', auth})
         this.readOnlineRows(sheets, this.spreadSheetId).then((retrievedRows) => {
           this.cachedOnLineRows = retrievedRows
