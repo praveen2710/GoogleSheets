@@ -59,6 +59,7 @@
       }
     },
     created () {
+      debugger
       if (store.has('docId')) {
         this.spreadsheetId = store.get('docId')
         if (store.has('credentials.json')) {
@@ -111,6 +112,7 @@
       loadFormData (auth) {
         this.rows = []
         this.auth = auth
+        debugger
         const sheets = google.sheets({version: 'v4', auth})
         this.readOnlineRows(sheets, this.spreadSheetId).then((retrievedRows) => {
           this.cachedOnLineRows = retrievedRows
@@ -135,18 +137,22 @@
             let retrievedRows = []
             for (let i in res.data.values) {
               let rowData = res.data.values[i]
-              retrievedRows.push({
-                sno: Number(rowData[0]),
-                entryDate: this.toDate(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
-                company: rowData[2],
-                partyNo: rowData[3],
-                pakkaAmt: Number(rowData[4]),
-                kachaAmt: Number(rowData[5]),
-                boxes: rowData[6],
-                createdDate: new Date(rowData[7]), // moment(rowData[7]).startOf('day').fromNow()
-                updateDate: new Date(rowData[8]),
-                id: rowData[9]
-              })
+              var ONE_DAY = 1000 * 60 * 60 * 24
+              var diff = new Date() - new Date(rowData[7])
+              if ((diff / ONE_DAY) < 8) {
+                retrievedRows.push({
+                  sno: Number(rowData[0]),
+                  entryDate: this.toDate(rowData[1]), // moment(rowData[1]).format('MMM Do YY'),
+                  company: rowData[2],
+                  partyNo: rowData[3],
+                  pakkaAmt: Number(rowData[4]),
+                  kachaAmt: Number(rowData[5]),
+                  boxes: rowData[6],
+                  createdDate: new Date(rowData[7]), // moment(rowData[7]).startOf('day').fromNow()
+                  updateDate: new Date(rowData[8]),
+                  id: rowData[9]
+                })
+              }
             }
             resolve(retrievedRows)
           })

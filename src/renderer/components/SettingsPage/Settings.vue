@@ -20,6 +20,7 @@
         <el-button type="primary" @click="onSubmit">Submit</el-button>
       </el-form-item>
     </el-form>
+    <el-button type="primary" @click="onReset">RESET ALL</el-button>
     <p>{{authUrl}}</p>
   </div>
 </template>
@@ -58,6 +59,12 @@ export default {
         access_type: 'offline',
         scope: this.SCOPES
       })
+    },
+    onReset () {
+      store.clear()
+      this.form.code = ''
+      this.form.docId = ''
+      this.creds = {}
     }
   }
 }

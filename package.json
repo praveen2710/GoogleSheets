@@ -1,6 +1,6 @@
 {
   "name": "googlesheets",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "",
   "description": "test to figure out how to make calls to google sheets api",
   "license": null,
@@ -69,7 +69,12 @@
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0"
+    "vuex-electron": "^1.0.0",
+    "ejs": "latest",
+    "aws-sdk": "latest",
+    "express": "latest",
+    "body-parser": "latest",
+    "mysql": "latest"
   },
   "devDependencies": {
     "ajv": "^6.5.0",
